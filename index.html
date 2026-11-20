@@ -507,3 +507,173 @@
   </script>
 </body>
 </html>
+    function renderMenu() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      const filtered = allMenu.filter(item => {
+        const matchCat = selectedCategory === 'الكل' || item.category === selectedCategory;
+        const matchSearch = !q || item.name.toLowerCase().includes(q) || item.category.toLowerCase().includes(q);
+        return matchCat && matchSearch;
+      });
+      document.getElementById('itemsCount').textContent = filtered.length + ' صنف';
+      const container = document.getElementById('menuContainer');
+      container.innerHTML = '';
+      if (filtered.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:40px; color:#a1a1aa;">لا توجد أصناف مطابقة.</div>';
+        return;
+      }
+      const grouped = {};
+      filtered.forEach(item => {
+        if (!grouped[item.category]) grouped[item.category] = [];
+        grouped[item.category].push(item);
+      });
+      Object.entries(grouped).forEach(([cat, items]) => {
+        const sec = document.createElement('div');
+        const head = document.createElement('div');
+        head.className = 'sec-header';
+        head.innerHTML = '<img src="' + (categoryImages[cat] || categoryImages['بيتزا إيطالي']) + '"><div><h3>' + cat + '</h3><span style="font-size:12px; color:#a1a1aa;">' + items.length + ' صنف</span></div>';
+        sec.appendChild(head);
+        const grid = document.createElement('div');
+        grid.className = 'grid';
+        items.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          let pHtml = item.price_single
+            ? '<span class="price-tag"><b>' + item.price_single + ' ج.م</b></span>'
+            : '<div class="prices">' +
+                (item.price_s ? '<span class="price-tag">ص: <b>' + item.price_s + '</b></span>' : '') +
+                (item.price_m ? '<span class="price-tag">و: <b>' + item.price_m + '</b></span>' : '') +
+                (item.price_l ? '<span class="price-tag">ك: <b>' + item.price_l + '</b></span>' : '') +
+              '</div>';
+          card.innerHTML = '<div><h4>' + item.name + '</h4>' + (item.description ? '<p>' + item.description + '</p>' : '') + '</div>' +
+            '<div class="card-footer">' + pHtml + '<button class="btn-add" onclick="openItemModal(' + item.id + ')">أضف للسلة +</button></div>';
+          grid.appendChild(card);
+        });
+        sec.appendChild(grid);
+        container.appendChild(sec);
+      });
+    }
+    function openItemModal(id) {
+      currentModalItem = allMenu.find(i => i.id === id);
+      if (!currentModalItem) return;
+      currentSelectedAddons = [];
+      document.getElementById('modalCategory').textContent = currentModalItem.category;
+      document.getElementById('modalTitle').textContent = currentModalItem.name;
+      document.getElementById('modalDesc').textContent = currentModalItem.description || '';
+      const sizes = [];
+      if (currentModalItem.price_single) sizes.push({ label: 'حجم موحد', price: Number(currentModalItem.price_single) });
+      else {
+        if (currentModalItem.price_s) sizes.push({ label: 'صغير', price: Number(currentModalItem.price_s) });
+        if (currentModalItem.price_m) sizes.push({ label: 'وسط', price: Number(currentModalItem.price_m) });
+        if (currentModalItem.price_l) sizes.push({ label: 'كبير', price: Number(currentModalItem.price_l) });
+      }
+      currentSelectedSize = sizes[0];
+      const sBox = document.getElementById('sizeOptions');
+      sBox.innerHTML = '';
+      sizes.forEach((s, idx) => {
+        const b = document.createElement('div');
+        b.className = 'size-btn' + (idx === 0 ? ' active' : '');
+        b.innerHTML = '<div style="font-size:12px; font-weight:700;">' + s.label + '</div><div style="font-size:14px; font-weight:900; color:#facc15;">' + s.price + ' ج.م</div>';
+        b.onclick = () => {
+          currentSelectedSize = s;
+          document.querySelectorAll('.size-btn').forEach(x => x.classList.remove('active'));
+          b.classList.add('active');
+          updateModalTotal();
+        };
+        sBox.appendChild(b);
+      });
+      const aBox = document.getElementById('addonsList');
+      aBox.innerHTML = '';
+      addonsList.forEach(a => {
+        const lbl = document.createElement('label');
+        lbl.className = 'addon-item';
+        lbl.innerHTML = '<span><input type="checkbox"> ' + a.name + '</span><b style="color:#facc15;">+' + a.price_single + '</b>';
+        lbl.querySelector('input').onchange = (e) => {
+          if (e.target.checked) currentSelectedAddons.push({ name: a.name, price: Number(a.price_single) });
+          else currentSelectedAddons = currentSelectedAddons.filter(x => x.name !== a.name);
+          updateModalTotal();
+        };
+        aBox.appendChild(lbl);
+      });
+      updateModalTotal();
+      document.getElementById('itemModal').style.display = 'flex';
+    }
+    function updateModalTotal() {
+      const addonsSum = currentSelectedAddons.reduce((s, a) => s + a.price, 0);
+      document.getElementById('modalItemTotal').textContent = (currentSelectedSize.price + addonsSum) + ' ج.م';
+    }
+    function closeItemModal() { document.getElementById('itemModal').style.display = 'none'; }
+    function confirmAddToCart() {
+      const addonsSum = currentSelectedAddons.reduce((s, a) => s + a.price, 0);
+      cart.push({ name: currentModalItem.name, category: currentModalItem.category, size: currentSelectedSize.label, addons: currentSelectedAddons.map(a => a.name), price: currentSelectedSize.price + addonsSum, qty: 1 });
+      saveCart(); closeItemModal();
+    }
+    function addOfferToCart(title, price) {
+      cart.push({ name: 'عرض: ' + title, category: 'عروض', size: 'عرض', addons: [], price: Number(price), qty: 1 });
+      saveCart();
+    }
+    function saveCart() { localStorage.setItem('alqalyube_cart', JSON.stringify(cart)); updateCartUI(); }
+    function updateCartUI() {
+      const bar = document.getElementById('floatingCart');
+      if (cart.length === 0) { bar.style.display = 'none'; return; }
+      bar.style.display = 'block';
+      document.getElementById('cartCountBadge').textContent = cart.reduce((s, i) => s + i.qty, 0);
+      const total = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+      document.getElementById('cartTotalBadge').textContent = total + ' ج.م';
+      document.getElementById('checkoutTotal').textContent = total + ' ج.م';
+    }
+    function openCartModal() { renderCartItems(); document.getElementById('cartModal').style.display = 'flex'; }
+    function closeCartModal() { document.getElementById('cartModal').style.display = 'none'; }
+    function renderCartItems() {
+      const list = document.getElementById('cartItemsList');
+      if (cart.length === 0) { closeCartModal(); return; }
+      list.innerHTML = '';
+      cart.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'background:#27272a; padding:10px; border-radius:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;';
+        row.innerHTML = '<div><div style="font-weight:700; font-size:13px;">' + item.name + ' <span style="color:#facc15;">(' + item.size + ')</span></div>' +
+          (item.addons.length ? '<div style="font-size:11px; color:#a1a1aa;">+ ' + item.addons.join('، ') + '</div>' : '') +
+          '<div style="font-size:12px; font-weight:700; color:#facc15;">' + (item.price * item.qty) + ' ج.م</div></div>' +
+          '<div style="display:flex; align-items:center; gap:8px;">' +
+            '<button onclick="changeQty(' + idx + ', -1)" style="width:26px; height:26px; background:#3f3f46; color:#fff; border:none; border-radius:6px; font-weight:700;">-</button>' +
+            '<b>' + item.qty + '</b>' +
+            '<button onclick="changeQty(' + idx + ', 1)" style="width:26px; height:26px; background:#facc15; color:#000; border:none; border-radius:6px; font-weight:700;">+</button>' +
+          '</div>';
+        list.appendChild(row);
+      });
+    }
+    function changeQty(idx, delta) { cart[idx].qty += delta; if (cart[idx].qty <= 0) cart.splice(idx, 1); saveCart(); renderCartItems(); }
+    async function submitOrder() {
+      const name = document.getElementById('custName').value.trim();
+      const phone = document.getElementById('custPhone').value.trim();
+      const address = document.getElementById('custAddress').value.trim();
+      const branch = document.querySelector('input[name="branch"]:checked').value;
+      if (!name || !phone || !address) { alert('يرجى إدخال الاسم ورقم الهاتف والعنوان بالتفصيل.'); return; }
+      const btn = document.getElementById('submitOrderBtn');
+      btn.disabled = true; btn.textContent = 'جاري الإرسال...';
+      const total = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+      const { data, error } = await db.from('orders').insert([{ branch, customer_name: name, customer_phone: phone, customer_address: address, items: cart, total_price: total, status: 'pending' }]).select();
+      btn.disabled = false; btn.textContent = 'تأكيد وإرسال الطلب 🚀';
+      if (error) { alert('حدث خطأ: ' + error.message); return; }
+      myOrderIds.unshift(data.id); localStorage.setItem('alqalyube_orders', JSON.stringify(myOrderIds));
+      cart = []; saveCart(); closeCartModal(); openMyOrders();
+    }
+    async function openMyOrders() { document.getElementById('myOrdersModal').style.display = 'flex'; await loadMyOrders(); }
+    async function loadMyOrders() {
+      const container = document.getElementById('myOrdersList');
+      if (myOrderIds.length === 0) { container.innerHTML = '<p style="text-align:center; color:#a1a1aa; padding:25px; font-size:13px;">لا توجد طلبات مسجلة حالياً.</p>'; return; }
+      const { data } = await db.from('orders').select('*').in('id', myOrderIds).order('id', { ascending: false });
+      const statusMap = { 'pending': '⏳ قيد المراجعة (سيتصل بك الكاشير لتأكيد الطلب)', 'preparing': '🔥 قيد التنفيذ (جاري تجهيز طلبك الآن)', 'delivered': '✅ تم التوصيل بنجاح', 'cancelled': '❌ تم إلغاء الطلب' };
+      container.innerHTML = '';
+      (data || []).forEach(o => {
+        const box = document.createElement('div');
+        box.style.cssText = 'background:#27272a; padding:12px; border-radius:14px; margin-bottom:10px;';
+        box.innerHTML = '<div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;"><b>طلب #' + o.id + ' (' + (o.branch === 'qanater' ? 'القناطر' : 'باسوس') + ')</b><b style="color:#facc15;">' + o.total_price + ' ج.م</b></div>' +
+          '<div style="background:#18181b; color:#facc15; padding:8px; border-radius:8px; font-size:12px; font-weight:700; margin-bottom:6px;">' + (statusMap[o.status] || statusMap['pending']) + '</div>' +
+          '<div style="font-size:11px; color:#a1a1aa;">' + o.items.map(i => i.qty + '× ' + i.name + ' (' + i.size + ')').join(' • ') + '</div>';
+        container.appendChild(box);
+      });
+    }
+    init();
+  </script>
+</body>
+</html>
