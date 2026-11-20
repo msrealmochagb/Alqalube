@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لوحة تحكم الإدارة | ALQALYUBE Admin</title>
+  <link href="https://googleapis.com" rel="stylesheet">
+  <script src="https://tailwindcss.com"></script>
+  <script src="https://jsdelivr.net"></script>
+  <style>body { font-family: 'Cairo', sans-serif; background-color: #09090b; color: #f4f4f5; }</style>
+</head>
+<body>
+
+  <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-yellow-500/40 rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl">
+      <div class="w-14 h-14 rounded-full bg-yellow-400 text-black font-black text-2xl flex items-center justify-center mx-auto mb-3">ق</div>
+      <h1 class="text-xl font-black text-yellow-400">لوحة تحكم الإدارة</h1>
+      <p class="text-xs text-zinc-400 mt-1 mb-5">أدخل كلمة المرور للوصول إلى تعديل الأسعار والمنيو</p>
+      <input id="adminPassInput" type="password" onkeydown="if(event.key==='Enter') checkLogin()" placeholder="كلمة المرور" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-center text-white outline-none focus:border-yellow-400 mb-3">
+      <button onclick="checkLogin()" class="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-black py-3 rounded-xl transition">دخول الإدارة</button>
+    </div>
+  </div>
+
+  <div id="dashboard" class="hidden max-w-6xl mx-auto p-4 pb-20">
+    <header class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 class="text-xl font-black text-yellow-400">⚙️ إدارة منيو القليوبي (تحديث لحظي)</h1>
+        <p class="text-xs text-zinc-400">أي تعديل يتم حفظه هنا يظهر فوراً لدى جميع العملاء</p>
+      </div>
+      <div class="flex gap-2">
+        <a href="/" target="_blank" class="bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-2 rounded-xl text-xs font-bold">معاينة الموقع ↗</a>
+        <a href="/orders" target="_blank" class="bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded-xl text-xs font-bold">شاشة الكاشير ↗</a>
+      </div>
+    </header>
+
+    <div class="flex gap-2 mb-6 overflow-x-auto">
+      <button onclick="switchTab('menu')" id="tab-menu" class="bg-yellow-400 text-black font-black px-4 py-2 rounded-xl text-sm">🍕 الأصناف والأسعار</button>
+      <button onclick="switchTab('add')" id="tab-add" class="bg-zinc-900 text-zinc-300 font-bold px-4 py-2 rounded-xl text-sm">➕ إضافة صنف جديد</button>
+      <button onclick="switchTab('offers')" id="tab-offers" class="bg-zinc-900 text-zinc-300 font-bold px-4 py-2 rounded-xl text-sm">🔥 إدارة العروض</button>
+      <button onclick="switchTab('security')" id="tab-security" class="bg-zinc-900 text-zinc-300 font-bold px-4 py-2 rounded-xl text-sm">🔐 كلمات المرور</button>
+    </div>
+
+    <div id="view-menu">
+      <div class="flex flex-wrap gap-2 mb-4">
+        <input id="adminSearch" oninput="renderAdminMenu()" type="text" placeholder="ابحث باسم الصنف لتعديل سعره..." class="flex-1 min-w-[200px] bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-yellow-400">
+        <select id="adminCatFilter" onchange="renderAdminMenu()" class="bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-yellow-400">
+          <option value="الكل">كل الأقسام</option>
+        </select>
+      </div>
+      <div id="adminMenuList" class="space-y-3"></div>
+    </div>
+
+    <div id="view-add" class="hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-5 max-w-xl">
+      <h2 class="text-lg font-black text-yellow-400 mb-4">إضافة صنف جديد للمنيو</h2>
+      <div class="space-y-3">
+        <input id="newCat" type="text" list="catSuggestions" placeholder="القسم (مثال: بيتزا إيطالي، الكريب، حلو القليوبي)" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm">
+        <datalist id="catSuggestions">
+          <option value="بيتزا إيطالي"><option value="بيتزا شرقي"><option value="حواوشي اسكندراني">
+          <option value="باستا"><option value="فطير مشلتت"><option value="حلو القليوبي">
+          <option value="الكريب"><option value="الصاروخ"><option value="كريب الحلو"><option value="الإضافات">
+        </datalist>
+        <input id="newName" type="text" placeholder="اسم الصنف (مثال: بيتزا مكس القليوبي)" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm">
+        <input id="newDesc" type="text" placeholder="مكونات / وصف مختصر (اختياري)" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm">
+        <div class="grid grid-cols-3 gap-2">
+          <input id="newS" type="number" placeholder="سعر صغير" class="bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm">
+          <input id="newM" type="number" placeholder="سعر وسط" class="bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm">
+          <input id="newL" type="number" placeholder="سعر كبير" class="bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm">
+        </div>
+        <input id="newSingle" type="number" placeholder="أو سعر موحد (للكريب والباستا والإضافات)" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm">
+        <button onclick="addNewItem()" class="w-full bg-yellow-400 text-black font-black py-3 rounded-xl">حفظ وإضافة للمنيو فوراً ✅</button>
+      </div>
+    </div>
+
+    <div id="view-offers" class="hidden space-y-5">
+      <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 max-w-xl">
+        <h2 class="text-lg font-black text-yellow-400 mb-3">إضافة عرض جديد</h2>
+        <div class="space-y-3">
+          <input id="offerTitle" type="text" placeholder="عنوان العرض (مثال: عرض الصحاب)" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm">
+          <input id="offerDetails" type="text" placeholder="تفاصيل العرض (مثال: 2 بيتزا وسط + 2 كريب + لتر بيبسي)" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm">
+          <input id="offerPrice" type="number" placeholder="سعر العرض (اختياري)" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm">
+          <button onclick="addOffer()" class="w-full bg-yellow-400 text-black font-black py-2.5 rounded-xl">نشر العرض الآن 🔥</button>
+        </div>
+      </div>
+      <div id="adminOffersList" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+    </div>
+
+    <div id="view-security" class="hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-5 max-w-md space-y-5">
+      <div>
+        <h2 class="text-base font-black text-yellow-400 mb-2">تغيير كلمة مرور الإدارة (/admin)</h2>
+        <input id="newAdminPass" type="text" placeholder="كلمة مرور الإدارة الجديدة" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm mb-2">
+        <button onclick="changePassword('admin_password', 'newAdminPass')" class="w-full bg-yellow-400 text-black font-black py-2.5 rounded-xl text-sm">تحديث باسورد الإدارة</button>
+      </div>
+      <div class="pt-4 border-t border-zinc-800">
+        <h2 class="text-base font-black text-yellow-400 mb-2">تغيير كلمة مرور الكاشير (/orders)</h2>
+        <input id="newOrdersPass" type="text" placeholder="كلمة مرور الكاشير الجديدة" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm mb-2">
+        <button onclick="changePassword('orders_password', 'newOrdersPass')" class="w-full bg-green-500 text-black font-black py-2.5 rounded-xl text-sm">تحديث باسورد الكاشير</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const SUPABASE_URL = 'https://supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_8VODvIWiUFVkkdQjqZc7cA_NtPhuTI7';
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let items = [];
+
+    async function checkLogin() {
+      const entered = document.getElementById('adminPassInput').value.trim();
+      const { data } = await db.from('settings').select('value').eq('key', 'admin_password').single();
+      if (data && data.value === entered) {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+        loadData();
+      } else {
+        alert('كلمة المرور غير صحيحة!');
+      }
+    }
+
+    function switchTab(tab) {
+      ['menu', 'add', 'offers', 'security'].forEach(t => {
+        document.getElementById('view-' + t).classList.toggle('hidden', t !== tab);
+        document.getElementById('tab-' + t).className = t === tab
+          ? 'bg-yellow-400 text-black font-black px-4 py-2 rounded-xl text-sm'
+          : 'bg-zinc-900 text-zinc-300 font-bold px-4 py-2 rounded-xl text-sm';
+      });
+    }
+
+    async function loadData() {
+      const { data } = await db.from('menu_items').select('*').order('id', { ascending: true });
+      items = data || [];
+      const cats = [...new Set(items.map(i => i.category))];
+      document.getElementById('adminCatFilter').innerHTML =
+        '<option value="الكل">كل الأقسام (' + items.length + ')</option>' +
+        cats.map(c => '<option value="' + c + '">' + c + '</option>').join('');
+      renderAdminMenu();
+      loadOffers();
+    }
+
+    function renderAdminMenu() {
+      const q = document.getElementById('adminSearch').value.trim().toLowerCase();
+      const cat = document.getElementById('adminCatFilter').value;
+      const filtered = items.filter(i => (cat === 'الكل' || i.category === cat) && (!q || i.name.toLowerCase().includes(q)));
+
+      document.getElementById('adminMenuList').innerHTML = filtered.map(i =>
+        '<div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">' +
+          '<div>' +
+            '<span class="text-[11px] text-yellow-400 font-bold">' + i.category + '</span>' +
+            '<input id="name-' + i.id + '" value="' + i.name + '" class="block bg-transparent font-bold text-white text-base border-b border-transparent focus:border-yellow-400 outline-none">' +
+          '</div>' +
+          '<div class="flex flex-wrap items-center gap-2 text-xs">' +
+            '<label>ص: <input id="s-' + i.id + '" type="number" value="' + (i.price_s || '') + '" class="w-16 bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1.5 text-center"></label>' +
+            '<label>و: <input id="m-' + i.id + '" type="number" value="' + (i.price_m || '') + '" class="w-16 bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1.5 text-center"></label>' +
+            '<label>ك: <input id="l-' + i.id + '" type="number" value="' + (i.price_l || '') + '" class="w-16 bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1.5 text-center"></label>' +
+            '<label>موحد: <input id="single-' + i.id + '" type="number" value="' + (i.price_single || '') + '" class="w-16 bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1.5 text-center"></label>' +
+            '<button onclick="saveItem(' + i.id + ')" class="bg-green-600 hover:bg-green-500 text-white font-bold px-3 py-1.5 rounded-lg">حفظ</button>' +
+            '<button onclick="deleteItem(' + i.id + ')" class="bg-red-600/80 hover:bg-red-600 text-white font-bold px-3 py-1.5 rounded-lg">حذف</button>' +
+          '</div>' +
+        '</div>'
+      ).join('');
+    }
+
+    async function saveItem(id) {
+      const name = document.getElementById('name-' + id).value.trim();
+      const price_s = document.getElementById('s-' + id).value || null;
+      const price_m = document.getElementById('m-' + id).value || null;
+      const price_l = document.getElementById('l-' + id).value || null;
+      const price_single = document.getElementById('single-' + id).value || null;
+      await db.from('menu_items').update({ name, price_s, price_m, price_l, price_single }).eq('id', id);
+      alert('تم حفظ التعديل وتحديث المنيو فوراً ✅');
+    }
+
+    async function deleteItem(id) {
+      if (!confirm('هل أنت متأكد من حذف هذا الصنف نهائياً؟')) return;
+      await db.from('menu_items').delete().eq('id', id);
+      loadData();
+    }
+
+    async function addNewItem() {
+      const category = document.getElementById('newCat').value.trim();
+      const name = document.getElementById('newName').value.trim();
+      const description = document.getElementById('newDesc').value.trim() || null;
+      const price_s = document.getElementById('newS').value || null;
+      const price_m = document.getElementById('newM').value || null;
+      const price_l = document.getElementById('newL').value || null;
+      const price_single = document.getElementById('newSingle').value || null;
+      if (!category || !name) { alert('يرجى إدخال القسم واسم الصنف'); return; }
+      await db.from('menu_items').insert([{ category, name, description, price_s, price_m, price_l, price_single }]);
+      alert('تم إضافة الصنف بنجاح!');
+      loadData();
+      switchTab('menu');
+    }
+
+    async function loadOffers() {
+      const { data } = await db.from('offers').select('*').order('id', { ascending: false });
+      document.getElementById('adminOffersList').innerHTML = (data || []).map(o =>
+        '<div class="bg-zinc-900 border border-yellow-500/30 rounded-2xl p-4 flex justify-between items-center">' +
+          '<div>' +
+            '<h4 class="font-bold text-yellow-400">' + o.title + '</h4>' +
+            '<p class="text-xs text-zinc-400">' + o.details + (o.price ? ' (' + o.price + ' ج.م)' : '') + '</p>' +
+          '</div>' +
+          '<button onclick="deleteOffer(' + o.id + ')" class="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">إزالة</button>' +
+        '</div>'
+      ).join('');
+    }
+
+    async function addOffer() {
+      const title = document.getElementById('offerTitle').value.trim();
+      const details = document.getElementById('offerDetails').value.trim();
+      const price = document.getElementById('offerPrice').value || null;
+      if (!title || !details) return;
+      await db.from('offers').insert([{ title, details, price }]);
+      document.getElementById('offerTitle').value = '';
+      document.getElementById('offerDetails').value = '';
+      document.getElementById('offerPrice').value = '';
+      loadOffers();
+    }
+
+    async function deleteOffer(id) {
+      await db.from('offers').delete().eq('id', id);
+      loadOffers();
+    }
+
+    async function changePassword(key, inputId) {
+      const val = document.getElementById(inputId).value.trim();
+      if (val.length < 4) { alert('كلمة المرور قصيرة جداً'); return; }
+      await db.from('settings').update({ value: val }).eq('key', key);
+      document.getElementById(inputId).value = '';
+      alert('تم تحديث كلمة المرور بنجاح 🔐');
+    }
+  </script>
+</body>
+</html>
