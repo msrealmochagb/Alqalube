@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ALQALYUBE | منيو مطعم القليوبي</title>
+  <link href="https://googleapis.com" rel="stylesheet">
+  <script src="https://tailwindcss.com"></script>
+  <script src="https://jsdelivr.net"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; background-color: #0d0d0d; color: #f5f5f5; }
+    .en { font-family: 'Poppins', sans-serif; }
+    .gold-gradient { background: linear-gradient(135deg, #facc15 0%, #eab308 100%); }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="pb-28">
+
+  <header class="bg-zinc-950 border-b border-yellow-500/30 sticky top-0 z-40 shadow-xl">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full gold-gradient flex items-center justify-center text-black font-black text-xl shadow-lg border-2 border-yellow-200">ق</div>
+        <div>
+          <h1 class="text-xl md:text-2xl font-black text-yellow-400 tracking-wide en">ALQALYUBE</h1>
+          <p class="text-xs text-zinc-400">بيتزا • فطير شرقي وحلو • كريب • حواوشي • باستا</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="openMyOrders()" class="relative bg-zinc-900 hover:bg-zinc-800 border border-yellow-500/40 text-yellow-400 px-3 py-2 rounded-xl text-xs md:text-sm font-bold flex items-center gap-1.5">
+          <span>طلباتي</span>
+          <span id="myOrdersBadge" class="hidden w-2.5 h-2.5 rounded-full bg-green-500 animate-ping"></span>
+        </button>
+        <span class="hidden sm:inline-flex items-center gap-1.5 bg-green-950/80 border border-green-500/40 text-green-400 px-3 py-1.5 rounded-full text-xs font-bold">مفتوح 24 ساعة</span>
+      </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4 pb-3">
+      <div class="relative">
+        <input id="searchInput" type="text" oninput="renderMenu()" placeholder="ابحث عن بيتزا، فطيرة، كريب، حواوشي، نجرسكو..." class="w-full bg-zinc-900 border border-zinc-700 focus:border-yellow-400 rounded-xl py-2.5 px-4 pr-10 text-sm text-white placeholder-zinc-400 outline-none" />
+        <span class="absolute right-3.5 top-2.5 text-zinc-400">🔍</span>
+        <button id="clearSearch" onclick="document.getElementById('searchInput').value=''; renderMenu();" class="hidden absolute left-3 top-2.5 text-xs text-yellow-400 font-bold">مسح</button>
+      </div>
+    </div>
+    <div id="categoriesBar" class="max-w-6xl mx-auto px-4 pb-3 flex gap-2 overflow-x-auto hide-scrollbar"></div>
+  </header>
+
+  <section id="offersSection" class="max-w-6xl mx-auto px-4 pt-4 hidden">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-yellow-400 font-black text-base">🔥 عروض القليوبي الحصرية</span>
+      <span class="text-xs text-zinc-400 en">SPECIAL OFFERS</span>
+    </div>
+    <div id="offersContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+  </section>
+
+  <main class="max-w-6xl mx-auto px-4 pt-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg md:text-xl font-black text-white flex items-center gap-2">
+        <span class="text-yellow-400 en">ALQALYUBE MENU</span>
+        <span class="text-xs font-normal text-zinc-400">(جميع منتجاتنا بالزبدة البلدي)</span>
+      </h2>
+      <span id="itemsCount" class="text-xs text-zinc-400"></span>
+    </div>
+    <div id="loadingState" class="text-center py-16">
+      <div class="w-10 h-10 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+      <p class="text-zinc-400 text-sm">جاري تحميل المنيو الطازج...</p>
+    </div>
+    <div id="menuContainer" class="space-y-8"></div>
+  </main>
+
+  <footer class="max-w-6xl mx-auto px-4 mt-14 pt-8 border-t border-zinc-800 text-sm">
+    <div class="text-center mb-6">
+      <h3 class="text-xl font-black text-yellow-400">فروع مطعم القليوبي وخدمة التوصيل</h3>
+      <p class="text-zinc-400 text-xs mt-1">إدارة الحاج / محمود أبو سريع القليوبي • خدمة 24 ساعة طوال أيام الأسبوع</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div class="bg-zinc-900/90 border border-yellow-500/30 rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-2">
+          <span class="bg-yellow-400 text-black font-black px-3 py-1 rounded-lg text-xs">فرع القناطر الخيرية</span>
+          <a href="https://google.com" target="_blank" class="text-xs bg-zinc-800 text-yellow-400 px-3 py-1.5 rounded-lg font-bold">📍 خرائط جوجل</a>
+        </div>
+        <p class="text-zinc-200 font-semibold mt-2">العنوان: كورنيش النيل - بجوار باتا - القناطر الخيرية</p>
+        <div class="mt-3 flex flex-wrap gap-2 text-xs">
+          <a href="tel:01014127064" class="bg-zinc-800 px-3 py-1.5 rounded-lg text-white">📞 01014127064</a>
+          <a href="tel:01221304268" class="bg-zinc-800 px-3 py-1.5 rounded-lg text-white">📞 01221304268</a>
+          <a href="tel:0242176801" class="bg-zinc-800 px-3 py-1.5 rounded-lg text-yellow-300">☎️ أرضي: 0242176801</a>
+        </div>
+      </div>
+      <div class="bg-zinc-900/90 border border-yellow-500/30 rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-2">
+          <span class="bg-yellow-400 text-black font-black px-3 py-1 rounded-lg text-xs">فرع باسوس</span>
+          <a href="https://google.com" target="_blank" class="text-xs bg-zinc-800 text-yellow-400 px-3 py-1.5 rounded-lg font-bold">📍 خرائط جوجل</a>
+        </div>
+        <p class="text-zinc-200 font-semibold mt-2">العنوان: شارع الموزة - بجوار أبو كرم السبكي - باسوس</p>
+        <div class="mt-3 flex flex-wrap gap-2 text-xs">
+          <a href="tel:01110454750" class="bg-zinc-800 px-3 py-1.5 rounded-lg text-white">📞 01110454750</a>
+          <a href="tel:01069289696" class="bg-zinc-800 px-3 py-1.5 rounded-lg text-white">📞 01069289696</a>
+        </div>
+      </div>
+    </div>
+    <div class="flex flex-wrap justify-center gap-3 pb-6">
+      <a href="https://wa.me" target="_blank" class="bg-green-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm">💬 واتساب: 01221304268</a>
+      <a href="https://facebook.com" target="_blank" class="bg-blue-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm">📘 فيسبوك: ALQALYUBE</a>
+    </div>
+  </footer>
+  <div id="floatingCart" class="fixed bottom-4 left-4 right-4 max-w-2xl mx-auto z-40 hidden">
+    <button onclick="openCartModal()" class="w-full gold-gradient text-black font-black py-3.5 px-5 rounded-2xl shadow-2xl flex items-center justify-between border-2 border-yellow-200">
+      <div class="flex items-center gap-2.5">
+        <span id="cartCountBadge" class="bg-black text-yellow-400 w-7 h-7 rounded-full flex items-center justify-center text-sm">0</span>
+        <span class="text-base">عرض سلة الطلبات وإتمام الطلب</span>
+      </div>
+      <span id="cartTotalBadge" class="text-lg font-black">0 ج.م</span>
+    </button>
+  </div>
+
+  <div id="itemModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-zinc-900 border border-yellow-500/40 w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-start mb-3">
+        <div>
+          <span id="modalCategory" class="text-xs text-yellow-400 font-bold"></span>
+          <h3 id="modalTitle" class="text-xl font-black text-white"></h3>
+          <p id="modalDesc" class="text-xs text-zinc-400 mt-0.5"></p>
+        </div>
+        <button onclick="closeItemModal()" class="bg-zinc-800 text-zinc-300 w-8 h-8 rounded-full font-bold">✕</button>
+      </div>
+      <div id="sizeSection" class="mb-4">
+        <label class="block text-sm font-bold text-yellow-400 mb-2">اختر الحجم:</label>
+        <div id="sizeOptions" class="grid grid-cols-3 gap-2"></div>
+      </div>
+      <div id="addonsSection" class="mb-5">
+        <label class="block text-sm font-bold text-yellow-400 mb-2">إضافات اختيارية:</label>
+        <div id="addonsList" class="grid grid-cols-2 gap-2"></div>
+      </div>
+      <div class="flex items-center justify-between pt-3 border-t border-zinc-800">
+        <div>
+          <span class="text-xs text-zinc-400 block">الإجمالي للصنف</span>
+          <span id="modalItemTotal" class="text-xl font-black text-yellow-400">0 ج.م</span>
+        </div>
+        <button onclick="confirmAddToCart()" class="gold-gradient text-black font-black px-6 py-3 rounded-xl shadow-lg">أضف إلى السلة +</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="cartModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-zinc-900 border border-yellow-500/40 w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 max-h-[92vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4 pb-2 border-b border-zinc-800">
+        <h3 class="text-xl font-black text-yellow-400">🛒 سلة الطلبات</h3>
+        <button onclick="closeCartModal()" class="bg-zinc-800 text-zinc-300 w-8 h-8 rounded-full font-bold">✕</button>
+      </div>
+      <div id="cartItemsList" class="space-y-2.5 mb-4"></div>
+      <div class="mb-4">
+        <label class="block text-sm font-bold text-yellow-400 mb-2">ما الفرع الأقرب إليك؟ (مطلوب)</label>
+        <div class="grid grid-cols-2 gap-2.5">
+          <label class="cursor-pointer">
+            <input type="radio" name="branch" value="qanater" class="peer hidden" checked>
+            <div class="border-2 border-zinc-700 peer-checked:border-yellow-400 peer-checked:bg-yellow-400/10 rounded-xl p-3 text-center">
+              <div class="font-black text-sm text-white">فرع القناطر الخيرية</div>
+              <div class="text-[11px] text-zinc-400">كورنيش النيل</div>
+            </div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="branch" value="basous" class="peer hidden">
+            <div class="border-2 border-zinc-700 peer-checked:border-yellow-400 peer-checked:bg-yellow-400/10 rounded-xl p-3 text-center">
+              <div class="font-black text-sm text-white">فرع باسوس</div>
+              <div class="text-[11px] text-zinc-400">شارع الموزة</div>
+            </div>
+          </label>
+        </div>
+      </div>
+      <div class="space-y-3 mb-5">
+        <input id="custName" type="text" placeholder="الاسم بالكامل" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none focus:border-yellow-400">
+        <input id="custPhone" type="tel" placeholder="رقم الهاتف (للتأكيد مع الكاشير)" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none focus:border-yellow-400">
+        <textarea id="custAddress" rows="2" placeholder="العنوان بالتفصيل (المنطقة - الشارع - رقم العقار - علامة مميزة)" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none focus:border-yellow-400"></textarea>
+      </div>
+      <div class="flex items-center justify-between pt-3 border-t border-zinc-800">
+        <div>
+          <span class="text-xs text-zinc-400 block">إجمالي الفاتورة</span>
+          <span id="checkoutTotal" class="text-2xl font-black text-yellow-400">0 ج.م</span>
+        </div>
+        <button id="submitOrderBtn" onclick="submitOrder()" class="gold-gradient text-black font-black px-7 py-3.5 rounded-xl shadow-lg text-base">تأكيد وإرسال الطلب 🚀</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="myOrdersModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-zinc-900 border border-yellow-500/40 w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4 pb-2 border-b border-zinc-800">
+        <h3 class="text-lg font-black text-yellow-400">📦 متابعة طلباتي مباشرة</h3>
+        <button onclick="document.getElementById('myOrdersModal').classList.add('hidden')" class="bg-zinc-800 text-zinc-300 w-8 h-8 rounded-full font-bold">✕</button>
+      </div>
+      <div id="myOrdersList" class="space-y-3"></div>
+    </div>
+  </div>
+  <script>
+    const SUPABASE_URL = 'https://supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_8VODvIWiUFVkkdQjqZc7cA_NtPhuTI7';
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let allMenu = [];
+    let addonsList = [];
+    let offersList = [];
+    let selectedCategory = 'الكل';
+    let cart = JSON.parse(localStorage.getItem('alqalyube_cart') || '[]');
+    let myOrderIds = JSON.parse(localStorage.getItem('alqalyube_orders') || '[]');
+    let currentModalItem = null;
+    let currentSelectedSize = { label: '', price: 0 };
+    let currentSelectedAddons = [];
+
+    const categoryImages = {
+      'بيتزا إيطالي': 'https://unsplash.com',
+      'بيتزا شرقي': 'https://unsplash.com',
+      'حواوشي اسكندراني': 'https://unsplash.com',
+      'باستا': 'https://unsplash.com',
+      'فطير مشلتت': 'https://unsplash.com',
+      'حلو القليوبي': 'https://unsplash.com',
+      'الكريب': 'https://unsplash.com',
+      'الصاروخ': 'https://unsplash.com',
+      'كريب الحلو': 'https://unsplash.com'
+    };
+
+    async function init() {
+      await Promise.all([fetchMenu(), fetchOffers()]);
+      updateCartUI();
+      if (myOrderIds.length > 0) document.getElementById('myOrdersBadge').classList.remove('hidden');
+
+      db.channel('public-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items' }, () => fetchMenu())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'offers' }, () => fetchOffers())
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
+          if (myOrderIds.includes(payload.new.id)) loadMyOrders();
+        })
+        .subscribe();
+    }
+
+    async function fetchMenu() {
+      const { data } = await db.from('menu_items').select('*').eq('is_available', true).order('id', { ascending: true });
+      document.getElementById('loadingState').classList.add('hidden');
+      if (!data) return;
+      addonsList = data.filter(i => i.category === 'الإضافات');
+      allMenu = data.filter(i => i.category !== 'الإضافات');
+      renderCategories();
+      renderMenu();
+    }
+
+    async function fetchOffers() {
+      const { data } = await db.from('offers').select('*').eq('active', true).order('id', { ascending: false });
+      offersList = data || [];
+      const sec = document.getElementById('offersSection');
+      const cont = document.getElementById('offersContainer');
+      if (offersList.length === 0) { sec.classList.add('hidden'); return; }
+      sec.classList.remove('hidden');
+      cont.innerHTML = offersList.map(o =>
+        '<div class="bg-gradient-to-l from-yellow-500/20 to-zinc-900 border border-yellow-500/50 rounded-2xl p-4 flex justify-between items-center">' +
+          '<div>' +
+            '<h4 class="font-black text-yellow-400 text-base">' + o.title + '</h4>' +
+            '<p class="text-xs text-zinc-300 mt-1">' + o.details + '</p>' +
+            (o.price ? '<span class="inline-block mt-2 bg-yellow-400 text-black font-black text-xs px-2.5 py-0.5 rounded-md">' + o.price + ' ج.م</span>' : '') +
+          '</div>' +
+          (o.price ? '<button onclick="addOfferToCart(\'' + o.title + '\',' + o.price + ')" class="bg-yellow-400 text-black font-black px-3 py-2 rounded-xl text-xs shrink-0">اطلب العرض +</button>' : '') +
+        '</div>'
+      ).join('');
+    }
+
+    function renderCategories() {
+      const cats = ['الكل', ...new Set(allMenu.map(i => i.category))];
+      document.getElementById('categoriesBar').innerHTML = cats.map(c =>
+        '<button onclick="selectedCategory=\'' + c + '\'; renderCategories(); renderMenu();"' +
+        ' class="px-4 py-1.5 rounded-full text-xs md:text-sm font-bold whitespace-nowrap transition ' +
+        (selectedCategory === c ? 'gold-gradient text-black shadow-md' : 'bg-zinc-900 text-zinc-300 border border-zinc-800') + '">' +
+        c + '</button>'
+      ).join('');
+    }
+    function renderMenu() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      document.getElementById('clearSearch').classList.toggle('hidden', !q);
+      const filtered = allMenu.filter(item => {
+        const matchCat = selectedCategory === 'الكل' || item.category === selectedCategory;
+        const matchSearch = !q || item.name.toLowerCase().includes(q) || item.category.toLowerCase().includes(q) || (item.description && item.description.toLowerCase().includes(q));
+        return matchCat && matchSearch;
+      });
+      document.getElementById('itemsCount').textContent = filtered.length + ' صنف';
+
+      const grouped = {};
+      filtered.forEach(item => {
+        if (!grouped[item.category]) grouped[item.category] = [];
+        grouped[item.category].push(item);
+      });
+
+      const container = document.getElementById('menuContainer');
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="text-center py-12 text-zinc-400">لا توجد أصناف مطابقة لبحثك.</div>';
+        return;
+      }
+
+      container.innerHTML = Object.entries(grouped).map(([cat, items]) =>
+        '<section>' +
+          '<div class="flex items-center gap-3 mb-3 bg-zinc-900/80 p-2.5 rounded-2xl border border-zinc-800">' +
+            '<img src="' + (categoryImages[cat] || categoryImages['بيتزا إيطالي']) + '" alt="' + cat + '" class="w-12 h-12 rounded-xl object-cover border border-yellow-500/40">' +
+            '<div>' +
+              '<h3 class="text-lg font-black text-yellow-400">' + cat + '</h3>' +
+              '<span class="text-xs text-zinc-400">' + items.length + ' صنف متاح</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">' +
+            items.map(item => {
+              let priceHtml = item.price_single
+                ? '<span class="bg-zinc-800 text-yellow-400 font-black px-2.5 py-1 rounded-lg text-sm">' + item.price_single + ' ج.م</span>'
+                : '<div class="flex flex-wrap gap-1.5 text-xs">' +
+                    (item.price_s ? '<span class="bg-zinc-800 px-2 py-1 rounded-md text-zinc-300">ص: <b class="text-yellow-400">' + item.price_s + '</b></span>' : '') +
+                    (item.price_m ? '<span class="bg-zinc-800 px-2 py-1 rounded-md text-zinc-300">و: <b class="text-yellow-400">' + item.price_m + '</b></span>' : '') +
+                    (item.price_l ? '<span class="bg-zinc-800 px-2 py-1 rounded-md text-zinc-300">ك: <b class="text-yellow-400">' + item.price_l + '</b></span>' : '') +
+                  '</div>';
+              return '<div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col justify-between">' +
+                  '<div>' +
+                    '<div class="flex justify-between items-start gap-2">' +
+                      '<h4 class="font-bold text-white text-base">' + item.name + '</h4>' +
+                      '<span class="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full shrink-0">' + item.category + '</span>' +
+                    '</div>' +
+                    (item.description ? '<p class="text-xs text-zinc-400 mt-1">' + item.description + '</p>' : '') +
+                  '</div>' +
+                  '<div class="flex items-center justify-between mt-4 pt-3 border-t border-zinc-800/80 gap-2">' +
+                    priceHtml +
+                    '<button onclick="openItemModal(' + item.id + ')" class="gold-gradient text-black font-black px-3.5 py-1.5 rounded-xl text-xs shrink-0 shadow">أضف للسلة +</button>' +
+                  '</div>' +
+                '</div>';
+            }).join('') +
+          '</div>' +
+        '</section>'
+      ).join('');
+    }
+    function openItemModal(id) {
+      currentModalItem = allMenu.find(i => i.id === id);
+      if (!currentModalItem) return;
+      currentSelectedAddons = [];
+      document.getElementById('modalCategory').textContent = currentModalItem.category;
+      document.getElementById('modalTitle').textContent = currentModalItem.name;
+      document.getElementById('modalDesc').textContent = currentModalItem.description || '';
+
+      const sizes = [];
+      if (currentModalItem.price_single) sizes.push({ label: 'حجم موحد', price: Number(currentModalItem.price_single) });
+      else {
+        if (currentModalItem.price_s) sizes.push({ label: 'صغير', price: Number(currentModalItem.price_s) });
+        if (currentModalItem.price_m) sizes.push({ label: 'وسط', price: Number(currentModalItem.price_m) });
+        if (currentModalItem.price_l) sizes.push({ label: 'كبير', price: Number(currentModalItem.price_l) });
+      }
+      currentSelectedSize = sizes[0];
+      document.getElementById('sizeOptions').innerHTML = sizes.map((s, idx) =>
+        '<button type="button" onclick="selectSize(\'' + s.label + '\',' + s.price + ', this)"' +
+        ' class="size-btn border-2 ' + (idx === 0 ? 'border-yellow-400 bg-yellow-400/10' : 'border-zinc-700') + ' rounded-xl p-2.5 text-center">' +
+        '<div class="text-xs font-bold text-white">' + s.label + '</div>' +
+        '<div class="text-sm font-black text-yellow-400">' + s.price + ' ج.م</div></button>'
+      ).join('');
+
+      document.getElementById('addonsList').innerHTML = addonsList.map(a =>
+        '<label class="flex items-center justify-between bg-zinc-800/80 border border-zinc-700 rounded-xl px-3 py-2 cursor-pointer text-xs">' +
+        '<div class="flex items-center gap-2">' +
+        '<input type="checkbox" onchange="toggleAddon(\'' + a.name + '\',' + a.price_single + ', this.checked)" class="accent-yellow-400 w-4 h-4">' +
+        '<span>' + a.name + '</span></div>' +
+        '<span class="text-yellow-400 font-bold">+' + a.price_single + '</span></label>'
+      ).join('');
+
+      updateModalTotal();
+      document.getElementById('itemModal').classList.remove('hidden');
+    }
+
+    function selectSize(label, price, btn) {
+      currentSelectedSize = { label, price };
+      document.querySelectorAll('.size-btn').forEach(b => {
+        b.classList.remove('border-yellow-400', 'bg-yellow-400/10');
+        b.classList.add('border-zinc-700');
+      });
+      btn.classList.add('border-yellow-400', 'bg-yellow-400/10');
+      updateModalTotal();
+    }
+
+    function toggleAddon(name, price, checked) {
+      if (checked) currentSelectedAddons.push({ name, price: Number(price) });
+      else currentSelectedAddons = currentSelectedAddons.filter(a => a.name !== name);
+      updateModalTotal();
+    }
+
+    function updateModalTotal() {
+      const addonsSum = currentSelectedAddons.reduce((s, a) => s + a.price, 0);
+      document.getElementById('modalItemTotal').textContent = (currentSelectedSize.price + addonsSum) + ' ج.م';
+    }
+
+    function closeItemModal() { document.getElementById('itemModal').classList.add('hidden'); }
+
+    function confirmAddToCart() {
+      const addonsSum = currentSelectedAddons.reduce((s, a) => s + a.price, 0);
+      cart.push({
+        name: currentModalItem.name,
+        category: currentModalItem.category,
+        size: currentSelectedSize.label,
+        addons: currentSelectedAddons.map(a => a.name),
+        price: currentSelectedSize.price + addonsSum,
+        qty: 1
+      });
+      saveCart();
+      closeItemModal();
+    }
+
+    function addOfferToCart(title, price) {
+      cart.push({ name: 'عرض: ' + title, category: 'عروض', size: 'عرض', addons: [], price: Number(price), qty: 1 });
+      saveCart();
+    }
+
+    function saveCart() {
+      localStorage.setItem('alqalyube_cart', JSON.stringify(cart));
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      const bar = document.getElementById('floatingCart');
+      if (cart.length === 0) { bar.classList.add('hidden'); return; }
+      bar.classList.remove('hidden');
+      const total = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+      const count = cart.reduce((s, i) => s + i.qty, 0);
+      document.getElementById('cartCountBadge').textContent = count;
+      document.getElementById('cartTotalBadge').textContent = total + ' ج.م';
+      document.getElementById('checkoutTotal').textContent = total + ' ج.م';
+    }
+
+    function openCartModal() { renderCartItems(); document.getElementById('cartModal').classList.remove('hidden'); }
+    function closeCartModal() { document.getElementById('cartModal').classList.add('hidden'); }
+
+    function renderCartItems() {
+      const list = document.getElementById('cartItemsList');
+      if (cart.length === 0) { closeCartModal(); return; }
+      list.innerHTML = cart.map((item, idx) =>
+        '<div class="bg-zinc-800/80 rounded-xl p-3 flex justify-between items-center">' +
+          '<div>' +
+            '<div class="font-bold text-sm text-white">' + item.name + ' <span class="text-xs text-yellow-400">(' + item.size + ')</span></div>' +
+            (item.addons.length ? '<div class="text-[11px] text-zinc-400">+ ' + item.addons.join('، ') + '</div>' : '') +
+            '<div class="text-xs font-bold text-yellow-400 mt-1">' + (item.price * item.qty) + ' ج.م</div>' +
+          '</div>' +
+          '<div class="flex items-center gap-2">' +
+            '<button onclick="changeQty(' + idx + ', -1)" class="w-7 h-7 bg-zinc-700 rounded-lg font-bold">-</button>' +
+            '<span class="text-sm font-bold">' + item.qty + '</span>' +
+            '<button onclick="changeQty(' + idx + ', 1)" class="w-7 h-7 bg-yellow-400 text-black rounded-lg font-bold">+</button>' +
+          '</div>' +
+        '</div>'
+      ).join('');
+    }
+
+    function changeQty(idx, delta) {
+      cart[idx].qty += delta;
+      if (cart[idx].qty <= 0) cart.splice(idx, 1);
+      saveCart();
+      renderCartItems();
+    }
+
+    async function submitOrder() {
+      const name = document.getElementById('custName').value.trim();
+      const phone = document.getElementById('custPhone').value.trim();
+      const address = document.getElementById('custAddress').value.trim();
+      const branch = document.querySelector('input[name="branch"]:checked').value;
+      if (!name || !phone || !address) { alert('يرجى إدخال الاسم ورقم الهاتف والعنوان بالتفصيل.'); return; }
+
+      const btn = document.getElementById('submitOrderBtn');
+      btn.disabled = true; btn.textContent = 'جاري إرسال الطلب...';
+      const total = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+      const { data, error } = await db.from('orders').insert([{
+        branch, customer_name: name, customer_phone: phone, customer_address: address,
+        items: cart, total_price: total, status: 'pending'
+      }]).select();
+
+      btn.disabled = false; btn.textContent = 'تأكيد وإرسال الطلب 🚀';
+      if (error) { alert('حدث خطأ أثناء الإرسال، حاول مرة أخرى.'); return; }
+
+      myOrderIds.unshift(data[0].id);
+      localStorage.setItem('alqalyube_orders', JSON.stringify(myOrderIds));
+      cart = []; saveCart(); closeCartModal();
+      document.getElementById('myOrdersBadge').classList.remove('hidden');
+      openMyOrders();
+    }
+
+    async function openMyOrders() { document.getElementById('myOrdersModal').classList.remove('hidden'); await loadMyOrders(); }
+
+    async function loadMyOrders() {
+      const container = document.getElementById('myOrdersList');
+      if (myOrderIds.length === 0) {
+        container.innerHTML = '<p class="text-center text-zinc-400 py-8 text-sm">لا توجد طلبات مسجلة على هذا الجهاز حالياً.</p>';
+        return;
+      }
+      const { data } = await db.from('orders').select('*').in('id', myOrderIds).order('id', { ascending: false });
+      const statusMap = {
+        'pending': { text: '⏳ قيد المراجعة (سيتصل بك الكاشير لتأكيد الطلب)', color: 'text-yellow-400 border-yellow-500/40 bg-yellow-500/10' },
+        'preparing': { text: '🔥 قيد التنفيذ (جاري تجهيز طلبك الآن)', color: 'text-green-400 border-green-500/40 bg-green-500/10' },
+        'delivered': { text: '✅ تم التوصيل بنجاح', color: 'text-blue-400 border-blue-500/40 bg-blue-500/10' },
+        'cancelled': { text: '❌ تم إلغاء الطلب', color: 'text-red-400 border-red-500/40 bg-red-500/10' }
+      };
+      container.innerHTML = (data || []).map(o => {
+        const st = statusMap[o.status] || statusMap['pending'];
+        return '<div class="bg-zinc-800/80 border border-zinc-700 rounded-2xl p-4">' +
+            '<div class="flex justify-between items-center mb-2">' +
+              '<span class="font-black text-white text-sm">طلب رقم #' + o.id + ' (' + (o.branch === 'qanater' ? 'فرع القناطر' : 'فرع باسوس') + ')</span>' +
+              '<span class="text-xs font-bold text-yellow-400">' + o.total_price + ' ج.م</span>' +
+            '</div>' +
+            '<div class="border rounded-xl px-3 py-2 text-xs font-bold mb-2 ' + st.color + '">' + st.text + '</div>' +
+            '<div class="text-xs text-zinc-400">' + o.items.map(i => i.qty + '× ' + i.name + ' (' + i.size + ')').join(' • ') + '</div>' +
+          '</div>';
+      }).join('');
+    }
+
+    init();
+  </script>
+</body>
+</html>
